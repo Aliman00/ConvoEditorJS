@@ -22,9 +22,14 @@ Option.belongsTo(Screen, { as: 'NextScreen', foreignKey: 'nextScreenId' });
 Template.belongsTo(Screen, { as: 'InitialScreen', foreignKey: 'initialScreenId' });
 
 // Sync the models with the database
-sequelize.sync({ alter: true })
-  .then(() => console.log('Database & tables created!'))
-  .catch(error => console.log('This error occurred', error));
+// sequelize.sync({ alter: true })
+//   .then(() => console.log('Database & tables created!'))
+//   .catch(error => console.log('This error occurred', error));
+
+sequelize.authenticate()
+  .then(() => console.log('Database connection has been established successfully.'))
+  .catch(error => console.error('Unable to connect to the database:', error));
+
 
 module.exports = {
   sequelize,
