@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Template Editor</title>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/darkMode.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <main x-data="templateEditor()" class="container mx-auto p-6 max-w-7xl">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Conversation Template Editor</h1>
+                <button @click="resetEditorState()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Create
+                    New</button>
+                <button @click="toggleSTFMode"
+                    class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded transition duration-300"
+                    x-text="stfMode ? 'Disable STF Mode' : 'Enable STF Mode'"></button>
+            </div>
+            <button @click="toggleDarkMode" class="p-2 rounded-lg transition duration-300"
+                :class="{ 'bg-gray-300': !darkMode, 'bg-gray-700': darkMode }">
+                <span x-show="!darkMode" class="text-yellow-400 text-xl">🌙</span>
+                <span x-show="darkMode" class="text-yellow-400 text-xl">☀️</span>
+            </button>
+
+        </header>
+
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 dark:text-white">Template Management</h2>
+            <div class="flex flex-wrap items-start gap-4">
+                <div class="flex flex-col gap-2 flex-grow">
+                    <input x-model="templateName" type="text" placeholder="Template Name"
+                        class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        aria-label="Template Name">
+                    <input x-show="stfMode" x-model="stfPathPrefix" type="text"
+                        class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="STF Path Prefix">
+                </div>
+                <div class="flex flex-wrap items-center gap-4">
+                    <button @click="saveTemplate"
+                        class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Save
+                        Template</button>
+                    <select x-model="selectedTemplateId"
+                        class="p-2 bg-white dark:bg-gray-700 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white">
+                        <option value="">Select a template</option>
+                        <template x-for="template in templates" :key="template.id">
+                            <option :value="template.id" x-text="template.name"></option>
+                        </template>
+                    </select>
+                    <button @click="loadTemplate"
+                        class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Load
+                        Template</button>
+                    <button @click="deleteTemplate"
+                        class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Delete
+                        Template</button>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <section class="lg:w-1/3 bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 dark:text-white">Screens</h2>
+                <ul class="space-y-2">
+                    <template x-for="screen in screens" :key="screen.id">
+                        <li
+                            class="flex justify-between items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition duration-300">
+                            <span @click="selectScreen(screen.id)"
+                                :class="{'bg-blue-100 dark:bg-blue-900': selectedScreen === screen.id}"
+                                class="cursor-pointer flex-grow font-medium dark:text-white" x-text="screen.id_name"
+                                role="button" :aria-selected="selectedScreen === screen.id">
+                            </span>
+                            <button @click="removeScreen(screen.id)" class="text-red-500 hover:text-red-600 font-medium"
+                                :disabled="screens.length === 1" aria-label="Remove Screen">
+                                Remove
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+                <button @click="addScreen"
+                    class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Add
+                    Screen</button>
+            </section>
+
+            <section x-show="selectedScreen !== null"
+                class="lg:w-2/3 bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 dark:text-white">Edit Screen</h2>
+                <div class="space-y-4">
+                    <input x-model="currentScreen.id_name" type="text" placeholder="Screen ID"
+                        class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        aria-label="Screen ID">
+                    <textarea x-model="currentScreen.custom_dialog_text" placeholder="Dialog Text"
+                        class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-32 dark:bg-gray-700 dark:text-white"
+                        aria-label="Dialog Text"></textarea>
+                    <div x-show="stfMode" class="text-sm text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">STF Reference:</span>
+                        <span x-text="currentScreen.leftDialog || 'Not set'"></span>
+                    </div>
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" x-model="currentScreen.stop_conversation"
+                            class="form-checkbox text-blue-500">
+                        <span class="dark:text-white">Stop Conversation</span>
+                    </label>
+
+                    <div>
+                        <h3 class="font-semibold mb-2 dark:text-white">Options</h3>
+                        <template x-for="(option, index) in currentScreen.options" :key="index">
+                            <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
+                                <div class="flex space-x-2 mb-2">
+                                    <input x-model="option.text" type="text" placeholder="Option Text"
+                                        class="flex-grow p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                                        aria-label="Option Text">
+                                    <button x-show="!option.next_screen" @click="addScreenForOption(index)"
+                                        class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition duration-300">
+                                        Add Screen
+                                    </button>
+                                    <div x-show="option.next_screen" class="flex items-center">
+                                        <span x-text="getScreenName(option.next_screen)"
+                                            class="mr-2 font-medium dark:text-white"></span>
+                                    </div>
+                                    <button @click="removeOption(index)"
+                                        class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition duration-300"
+                                        aria-label="Remove Option">Remove</button>
+                                </div>
+                                <div x-show="stfMode" class="text-sm text-gray-600 dark:text-gray-400">
+                                    <span class="font-medium">STF Reference:</span> <span
+                                        x-text="option.stfReference || 'Not set'"></span>
+                                </div>
+                            </div>
+                        </template>
+                        <button @click="addOption"
+                            class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Add
+                            Option</button>
+                    </div>
+
+                    <div>
+                        <label for="taskAction" class="block font-medium mb-1 dark:text-white">Task Action:</label>
+                        <select id="taskAction" x-model="currentScreen.task_action"
+                            class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">None</option>
+                            <option value="activateTask">Activate Task</option>
+                            <option value="hasActiveTask">Has Active Task</option>
+                            <option value="completeTask">Complete Task</option>
+                            <option value="hasCompletedTask">Has Completed Task</option>
+                        </select>
+                        <div x-show="currentScreen.task_action !== ''" class="mt-2">
+                            <template x-if="currentScreen.task_action === 'activateTask'">
+                                <input id="taskName" type="text" placeholder="Task Title"
+                                    x-model="currentScreen.task_title"
+                                    class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-yellow-50 dark:bg-yellow-900 dark:text-white"
+                                    aria-label="Task Name">
+                            </template>
+                            <template
+                                x-if="currentScreen.task_action !== '' && currentScreen.task_action !== 'activateTask'">
+                                <select x-model="currentScreen.task_reaction"
+                                    class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-yellow-50 dark:bg-yellow-900 dark:text-white">
+                                    <option value="">Select a task</option>
+                                    <template x-for="task in getAllTaskTitles()" :key="task.value">
+                                        <option :value="task.value" x-text="task.title"></option>
+                                    </template>
+                                </select>
+                            </template>
+                            <textarea id="taskDescription" placeholder="Task Description"
+                                x-model="currentScreen.task_description"
+                                class="mt-2 w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-yellow-50 dark:bg-yellow-900 dark:text-white h-24 resize-y"
+                                aria-label="Task Description"
+                                x-show="currentScreen.task_action === 'activateTask' && currentScreen.task_title !== ''">
+                            </textarea>
+                        </div>
+                    </div>
+
+                    <button @click="saveScreen"
+                        class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Save
+                        Screen</button>
+                </div>
+            </section>
+        </div>
+        <div x-show="luaScript" class="flex justify-center mt-8">
+            <button @click="openModal()"
+                class="bg-indigo-700 hover:bg-indigo-800 text-white px-8 py-4 rounded-lg font-semibold transition duration-300 shadow-lg">
+                Preview Conversation and Conversation Handler
+            </button>
+        </div>
+        <div id="scriptModal" class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full hidden">
+            <div
+                class="relative top-20 mx-auto p-5 border w-11/12 xl:w-3/4 2xl:w-4/5 shadow-2xl rounded-xl bg-white dark:bg-gray-800">
+                <div class="mt-3">
+                    <h3 class="text-2xl leading-6 font-bold text-gray-900 dark:text-white mb-4">Script Viewer</h3>
+                    <div x-data="{ activeTab: 'luaScript' }" class="w-full mx-auto">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md">
+                            <div class="flex border-b dark:border-gray-700">
+                                <button @click="activeTab = 'luaScript'"
+                                    :class="{'bg-indigo-600 text-white': activeTab === 'luaScript', 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': activeTab !== 'luaScript'}"
+                                    class="flex-1 py-3 px-6 font-semibold transition duration-300">
+                                    Conversation
+                                </button>
+                                <button @click="activeTab = 'convoHandler'"
+                                    :class="{'bg-indigo-600 text-white': activeTab === 'convoHandler', 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': activeTab !== 'convoHandler'}"
+                                    class="flex-1 py-3 px-6 font-semibold transition duration-300">
+                                    Conversation Handler
+                                </button>
+                            </div>
+                            <pre x-show="activeTab === 'luaScript'" x-text="luaScript"
+                                class="p-6 bg-gray-900 text-green-400 rounded-b-lg overflow-auto max-h-[60vh] text-sm"></pre>
+                            <pre x-show="activeTab === 'convoHandler'" x-text="convoHandler"
+                                class="p-6 bg-gray-900 text-green-400 rounded-b-lg overflow-auto max-h-[60vh] text-sm"></pre>
+                        </div>
+                    </div>
+                    <div class="items-center px-4 py-3 mt-6">
+                        <button id="closeModal"
+                            class="px-6 py-3 bg-indigo-600 text-white text-lg font-medium rounded-lg w-full shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500                         focus:ring-opacity-50 transition duration-300">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <section class="mt-8 mb-10">
+            <h2 x-show="luaScript" class="text-xl font-semibold mb-4 dark:text-white">Generated Files</h2>
+            <div class="flex flex-wrap gap-4">
+                <button x-show="luaScript" @click="downloadLua()"
+                    class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Download
+                    Convo Lua</button>
+                <button x-show="convoHandler" @click="downloadConvoHandler()"
+                    class="bg-purple-700 hover:bg-purple-800 text-white font-semibold py-2 px-4 rounded transition duration-300">Download
+                    ConvoHandler Lua</button>
+                <button x-show="hasTaskActions()" @click="downloadSTFTaskData()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition duration-300">Download
+                    Tasks .stf</button>
+                <button x-show="stfMode" @click="downloadSTF()"
+                    class="bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded transition duration-300">Download
+                    Conversation .stf</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/modal.js"></script>
+    <script src="/js/TemplateEditor.js"></script>
+</body>
+
+</html>
