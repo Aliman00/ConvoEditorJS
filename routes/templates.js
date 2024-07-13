@@ -31,7 +31,7 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: "Template not found" });
     }
     const templateSchema = templateToSchema(template);
-    console.log('Template schema:', JSON.stringify(templateSchema, null, 2));
+    // console.log('Template schema:', JSON.stringify(templateSchema, null, 2));
     res.json(templateSchema);
   } catch (err) {
     console.error('Error fetching template:', err);
@@ -185,7 +185,7 @@ router.get('/:id/lua', async (req, res) => {
     if (!template) {
       return res.status(404).json({ error: "Template not found" });
     }
-    console.log('Template data:', JSON.stringify(template, null, 2));
+    // console.log('Template data:', JSON.stringify(template, null, 2));
     const luaScript = generateLuaScript(template);
     res.json({ lua_script: luaScript });
   } catch (err) {
@@ -209,7 +209,6 @@ router.get('/:id/convo_handler', async (req, res) => {
     if (!template) {
       return res.status(404).json({ error: "Template not found" });
     }
-    console.log('Template data for ConvoHandler:', JSON.stringify(template, null, 2));
     const convoHandler = generateConvoHandler(template);
     res.json({ convo_handler: convoHandler });
   } catch (err) {

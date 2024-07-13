@@ -105,7 +105,7 @@ const TemplateManager = {
         }
     
         try {
-            console.log(`Fetching template with ID: ${this.selectedTemplateId}`);
+            // console.log(`Fetching template with ID: ${this.selectedTemplateId}`);
             const response = await fetch(`/api/templates/${this.selectedTemplateId}`);
             console.log('Response status:', response.status);
             console.log('Response headers:', response.headers);
